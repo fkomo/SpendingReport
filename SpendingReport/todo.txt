@@ -1,0 +1,52 @@
+
+- grafy
+	- staticke/filtrovane len podla Filter.DisabledInputFiles
+		- timeline graf vsetkych transakcii (iny nema zmysel) - resp vsetkych aktivnych vstupnych suborov - casove rozlisenie/filter nema vplyv
+		- vsetky vyfiltrovane transakcie farebne kategorizovane - casove rozlisenie nema vplyv ale filter ano
+
+	- kompletne filtrovatelne	
+		- tri stlpce pre vybrane casove rozlisenie - income/savings/expense 
+		- vsetky kategorie - kazda grupa predstavuje jednu vybratu casovu jednotku
+		- napr. klik na Income stlpec nastavi Filter.CategoryId=Income a hore sa info o tom ze je filtrovane podla Income[x]
+		- klik na jednu zo skupin nastavi Filter.Grouping = Monthly, ...
+		
+
+InputFile
+- Id
+- xml
+
+GroupType = Monthly, Quarterly, SemiAnnually, Annually, None/All?
+
+Filter
+- DisabledInputFiles : InputFileId[]
+- DisabledCategories : CategoryId[]
+- Text : string
+- Grouping : GroupType
+- Groups : Group[]
+- CategoryId
+
+CategoryType = Income, Saving, Expense
+
+Category
+- Id
+- Name : string
+- Tags : string[]
+- Type : CategoryType
+
+Group
+- Id
+- Description
+
+Transaction
+- Id
+- InputFileId
+- CategoryId
+- GroupId
+- Description
+- Amount
+- Tag
+
+Transaction[] + Filter = transakcie do grafu / na zobrazenie
+
+ApplyCategories()
+ApplyFilter()

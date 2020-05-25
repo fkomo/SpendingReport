@@ -1,0 +1,431 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta charset="utf-8" />
+	<title>spending</title>
+	<link rel="stylesheet" href="css/site.css">
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+	<!--http://www.chartjs.org-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
+
+	<script src="scripts/common.js"></script>
+	<script src="scripts/xml.js"></script>
+	<script src="scripts/sorting.js"></script>
+	<script src="scripts/spending.js"></script>
+	<script src="scripts/spending2.js"></script>
+
+	<script type="text/javascript">
+
+		function OnLoad() {
+
+			sp2Test();
+
+			var inputFiles = JSON.parse(sessionStorage.getItem('inputFiles'));
+			if (inputFiles && inputFiles.length > 0) {
+
+				ShowSpendingReports(false);
+			}
+			else {
+
+				document.getElementById("main-content").style.width = '100%';
+
+				HideId("splitter");
+				HideId("right-content");
+				HideId("input-files-content");
+
+				HideAllTabs();
+				var categories = JSON.parse(sessionStorage.getItem('categories'));
+				if (categories)
+					UpdateCategories(categories);
+			}
+		}
+
+		function DropHandler(ev) {
+
+			ShowSpendingReports(true);
+
+			// Prevent default behavior (Prevent file from being opened)
+			ev.preventDefault();
+
+			var inputFiles = JSON.parse(sessionStorage.getItem('inputFiles'));
+			if (inputFiles == null)
+				inputFiles = [];
+
+			if (ev.dataTransfer.items) {
+
+				// Use DataTransferItemList interface to access the file(s)
+				WorkingStart();
+
+				var filesToProcess = 0;
+				for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+					// If dropped items aren't files, reject them
+					if (ev.dataTransfer.items[i].kind === 'file') {
+						var fileName = ev.dataTransfer.items[i].getAsFile().name;
+						if (!FileAlreadyUsed(fileName, inputFiles))
+							inputFiles.push({
+								FileName: fileName,
+								Id: null
+							});
+
+						filesToProcess++;
+					}
+				}
+				sessionStorage.setItem('filesToProcess', JSON.stringify(filesToProcess));
+				sessionStorage.setItem('inputFiles', JSON.stringify(inputFiles));
+
+				for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+					// If dropped items aren't files, reject them
+					if (ev.dataTransfer.items[i].kind === 'file')
+						ProcessFile(ev.dataTransfer.items[i].getAsFile());
+				}
+			} else {
+
+				// Use DataTransfer interface to access the file(s)
+				WorkingStart();
+
+				for (var i = 0; i < ev.dataTransfer.files.length; i++) {
+					var fileName = ev.dataTransfer.files[i].name;
+					if (!FileAlreadyUsed(fileName, inputFiles))
+						inputFiles.push({
+							FileName: fileName,
+							Id: null
+						});
+				}
+				sessionStorage.setItem('filesToProcess', JSON.stringify(ev.dataTransfer.files.length));
+				sessionStorage.setItem('inputFiles', JSON.stringify(inputFiles));
+
+				for (var i = 0; i < ev.dataTransfer.files.length; i++)
+					ProcessFile(ev.dataTransfer.files[i]);
+			}
+
+			// Pass event to removeDragData for cleanup
+			RemoveDragData(ev)
+		}
+
+		function FileAlreadyUsed(fileName, inputFiles) {
+			for (var f = 0; f < inputFiles.length; f++)
+				if (inputFiles[f].FileName == fileName)
+					return true;
+
+			return false;
+		}
+
+		function DragOverHandler(ev) {
+			// Prevent default behavior (Prevent file from being opened)
+			ev.preventDefault();
+		}
+
+		function RemoveDragData(ev) {
+
+			if (ev.dataTransfer.items) {
+				// Use DataTransferItemList interface to remove the drag data
+				ev.dataTransfer.items.clear();
+			} else {
+				// Use DataTransfer interface to remove the drag data
+				ev.dataTransfer.clearData();
+			}
+		}
+
+		function ClientSideReadFile() {
+			document.getElementById('file-input').addEventListener('change', ReadFile, false);
+			document.getElementById('file-input').click();
+
+			function ReadFile(evt) {
+
+				WorkingStart();
+
+				var inputFiles = JSON.parse(sessionStorage.getItem('inputFiles'));
+				if (inputFiles == null)
+					inputFiles = [];
+
+				for (var i = 0; i < evt.target.files.length; i++) {
+					var fileName = evt.target.files[i].name;
+					if (!FileAlreadyUsed(fileName, inputFiles))
+						inputFiles.push({
+							FileName: fileName,
+							Id: null
+						});
+				}
+				sessionStorage.setItem('filesToProcess', JSON.stringify(evt.target.files.length));
+				sessionStorage.setItem('inputFiles', JSON.stringify(inputFiles));
+
+				for (var i = 0; i < evt.target.files.length; i++)
+					ProcessFile(evt.target.files[i]);
+			}
+		}
+
+		function HideAllTabs() {
+
+			HideId('categories-tab');
+			HideId('spending-reports-tab');
+
+			sessionStorage.setItem('currentTab', null);
+		}
+
+		function ShowCategories() {
+			HideAllTabs();
+
+			ShowId('categories-tab');
+			sessionStorage.setItem('currentTab', 'categories-tab');
+
+			UpdateCategories();
+		}
+
+		function ToggleTransactions() {
+
+			var inputFiles = JSON.parse(sessionStorage.getItem('inputFiles'));
+			if (!inputFiles || inputFiles.length < 1)
+				return;
+
+			ShowTransactionsPanel(document.getElementById("right-content").style.display == 'none');
+
+			UpdateSpendingReportsAsync();
+		}
+
+		function ShowSpendingReports(noUpdate) {
+			HideAllTabs();
+
+			ShowId('spending-reports-tab');
+			sessionStorage.setItem('currentTab', 'spending-reports-tab');
+
+			if (noUpdate)
+				return;
+
+			UpdateSpendingReportsAsync();
+		}
+
+		function Reset() {
+
+			if (!confirm('Are you sure ?'))
+				return;
+
+			sessionStorage.clear();
+			location.reload();
+		}
+
+		function SettingsChanged() {
+
+			UpdateSpendingReportsAsync();
+		}
+
+		function ZoomLevelChanged(inputCheckId) {
+
+			var old = document.getElementById(inputCheckId).checked;
+			if (old == false) {
+				document.getElementById(inputCheckId).checked = true;
+				return;
+			}
+
+			document.getElementById('monthZoomCheck').checked = false;
+			document.getElementById('quarterZoomCheck').checked = false;
+			document.getElementById('halfYearZoomCheck').checked = false;
+			document.getElementById('yearZoomCheck').checked = false;
+			document.getElementById('totalZoomCheck').checked = false;
+
+			document.getElementById(inputCheckId).checked = old;
+
+			UpdateSpendingReportsAsync();
+		}
+
+		var localSplitOffset = 0;
+
+		function startDragSplit(e) {
+			e = e || window.event;
+			e.preventDefault();
+
+			localSplitOffset = e.clientX - document.getElementById("splitter").offsetLeft;
+
+			document.onmouseup = endDragSplit;
+			document.onmousemove = dragSplit;
+		}
+
+		function dragSplit(e) {
+			e = e || window.event;
+			e.preventDefault();
+
+			var newMainContentWidth = (e.clientX - localSplitOffset) + 'px';
+			console.log('newSplit=' + newMainContentWidth);
+
+			document.getElementById("main-content").style.width = newMainContentWidth;
+			sessionStorage.setItem('mainContentWidth', newMainContentWidth);
+
+			Draw(JSON.parse(sessionStorage.getItem('selectedCategory')), JSON.parse(sessionStorage.getItem('selectedSpendingReportId')), false);
+		}
+
+		function endDragSplit() {
+			document.onmouseup = null;
+			document.onmousemove = null;
+		}
+
+	</script>
+
+</head>
+<body onload="OnLoad();">
+
+	<div id="drop-zone-content">
+		<div id="drop-zone" ondrop="DropHandler(event);" ondragover="DragOverHandler(event);" onclick="ClientSideReadFile()">Drop SEPA xml here ...</div>
+		<input id="file-input" type="file" name="name" style="display: none;" accept=".xml" />
+	</div>
+
+	<!--<h1>Input files</h1>-->
+	<div id="input-files-content">
+	</div>
+
+	<div class="header-content">
+		<div id="menu-content">
+			<ul>
+				<li class="menu-button hilightable" onclick="ShowCategories()">Categories & Tags</li>
+				<li class="menu-button hilightable" onclick="ShowSpendingReports(false)">Spending Reports</li>
+
+				<li class="menu-button on-right hilightable" onclick="Reset()">Reset</li>
+				<li class="menu-button on-right hilightable" onclick="SaveCategories()">Save categories</li>
+			</ul>
+		</div>
+	</div>
+
+	<div class="wrap">
+
+		<div class="wrap-row">
+
+			<div id="main-content" class="column">
+				<div id="tab-content">
+
+					<div id="categories-tab">
+						<h1>Categories &amp; Tags</h1>
+
+						<div class="settings-content">
+							<label class="container">
+								Category usage
+								<input id="showCategoryUsageCheck" type="checkbox" onchange="SettingsChanged()">
+								<span class="checkmark"></span>
+							</label>
+
+							<label class="container">
+								Tag usage
+								<input id="showTagUsageCheck" type="checkbox" onchange="SettingsChanged()">
+								<span class="checkmark"></span>
+							</label>
+						</div>
+
+						<div id="categories-content">
+						</div>
+					</div>
+
+                    <div id="spending-reports-tab">
+                        <h1>Spending Reports</h1>
+
+                        <div class="zoom-level-content">
+                            <label class="container">
+                                Monthly
+                                <input id="monthZoomCheck" type="checkbox" onchange="ZoomLevelChanged('monthZoomCheck')" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="container">
+                                Quarterly
+                                <input id="quarterZoomCheck" type="checkbox" onchange="ZoomLevelChanged('quarterZoomCheck')">
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="container">
+                                Semiannually
+                                <input id="halfYearZoomCheck" type="checkbox" onchange="ZoomLevelChanged('halfYearZoomCheck')">
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="container">
+                                Annually
+                                <input id="yearZoomCheck" type="checkbox" onchange="ZoomLevelChanged('yearZoomCheck')">
+                                <span class="checkmark"></span>
+                            </label>
+                            <label class="container">
+                                Total
+                                <input id="totalZoomCheck" type="checkbox" onchange="ZoomLevelChanged('totalZoomCheck')">
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+
+                        <div class="chart-row">
+                            <div id="account-sum-content">
+                                <canvas id="account-sum-canvas" />
+                            </div>
+                        </div>
+
+                        <div class="chart-row">
+                            <div id="transactions-content">
+                                <canvas id="transactions-canvas" />
+                            </div>
+                        </div>
+
+                        <div class="chart-row">
+                            <div id="spending-report-inout-content">
+                                <canvas id="spending-report-inout-canvas" />
+                            </div>
+                        </div>
+
+                        <div class="chart-row">
+                            <div id="spending-report-all-content">
+                                <canvas id="spending-report-all-canvas" />
+                            </div>
+                        </div>
+                    </div>
+				</div>
+			</div>
+
+			<div id="splitter" class="column" onmousedown="startDragSplit()">
+			</div>
+
+			<div id="right-content" class="column">
+				<h1>Transactions</h1>
+
+				<div class="settings-content">
+					<label class="container">
+						Detailed transaction info
+						<input id="showDetailedTransactionCheck" type="checkbox" checked onchange="SettingsChanged()">
+						<span class="checkmark"></span>
+					</label>
+				</div>
+
+				<input type="text" id="transactions-filter-input" oninput="TransactionsFilterChanged('transactions-list-content', 'transactions')" value="" placeholder="Filter by transaction details ..." />
+				<div id="transactions-list-content">
+				</div>
+			</div>
+
+		</div>
+
+	</div>
+
+	<!--<div id="front-content">
+		<h1>Settings</h1>
+		<ul>
+			<li class="settings-category">
+				<ul>
+					<li>
+						???
+					</li>
+				</ul>
+			</li>
+		</ul>
+	</div>-->
+
+	<div id="workInProgress" style="display:none"></div>
+	<div id="workInProgressOverlay" style="display:none">&#160;</div>
+
+	<div class="color-positive"></div>
+	<div class="color-negative"></div>
+
+	<div class="color0"></div>
+	<div class="color1"></div>
+	<div class="color2"></div>
+	<div class="color3"></div>
+	<div class="color4"></div>
+	<div class="color5"></div>
+	<div class="color6"></div>
+	<div class="color7"></div>
+	<div class="color8"></div>
+	<div class="color9"></div>
+	<div class="color10"></div>
+
+</body>
+</html>

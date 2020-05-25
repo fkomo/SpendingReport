@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SpendingReport", "SpendingReport", "{81B64DCB-2D23-40E9-BDB6-6992EA725BBF}"
+	ProjectSection(SolutionItems) = preProject
+		SpendingReport\todo.txt = SpendingReport\todo.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ui", "ui", "{744CC60D-10F0-4AF9-BDB0-F493228BCFCD}"
+	ProjectSection(SolutionItems) = preProject
+		SpendingReport\ui\index.html = SpendingReport\ui\index.html
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "css", "css", "{15107D54-766F-41DF-A1EA-77D9AAADD538}"
+	ProjectSection(SolutionItems) = preProject
+		SpendingReport\ui\css\site.css = SpendingReport\ui\css\site.css
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{0019DB36-870F-4639-BCBE-DA2F3CF32D36}"
+	ProjectSection(SolutionItems) = preProject
+		SpendingReport\ui\scripts\common.js = SpendingReport\ui\scripts\common.js
+		SpendingReport\ui\scripts\sorting.js = SpendingReport\ui\scripts\sorting.js
+		SpendingReport\ui\scripts\spending.js = SpendingReport\ui\scripts\spending.js
+		SpendingReport\ui\scripts\spending2.js = SpendingReport\ui\scripts\spending2.js
+		SpendingReport\ui\scripts\xml.js = SpendingReport\ui\scripts\xml.js
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "xslt", "xslt", "{BBCBC634-1412-4106-9E2B-0B7552F001BC}"
+	ProjectSection(SolutionItems) = preProject
+		SpendingReport\ui\xslt\categories-to-html.xsl = SpendingReport\ui\xslt\categories-to-html.xsl
+		SpendingReport\ui\xslt\sepa-to-spending.xsl = SpendingReport\ui\xslt\sepa-to-spending.xsl
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{744CC60D-10F0-4AF9-BDB0-F493228BCFCD} = {81B64DCB-2D23-40E9-BDB6-6992EA725BBF}
+		{15107D54-766F-41DF-A1EA-77D9AAADD538} = {744CC60D-10F0-4AF9-BDB0-F493228BCFCD}
+		{0019DB36-870F-4639-BCBE-DA2F3CF32D36} = {744CC60D-10F0-4AF9-BDB0-F493228BCFCD}
+		{BBCBC634-1412-4106-9E2B-0B7552F001BC} = {744CC60D-10F0-4AF9-BDB0-F493228BCFCD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2C87E2A3-CF5F-43DE-AC57-D13316DA0782}
+	EndGlobalSection
+EndGlobal
